@@ -592,15 +592,15 @@ public class ExtAudioRecorder
 					
 					
 					
-					/*// ------- Load a existing .wav file
+					// ------- Load a existing .wav file
 					int iSize = 0;
 					iBufSizeWav = 0;
 					bySrcBuf = readWav();
 					payloadSize = iBufSizeWav;
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf);*/
-					
-					
 					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf);
+					
+					
+					//Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf);
 					
 					byPattern = conv2freq.GetPattern();
 					

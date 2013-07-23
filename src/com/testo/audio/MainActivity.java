@@ -274,13 +274,14 @@ public class MainActivity extends Activity {
 		
 		
 		EditText patternTxt = (EditText)findViewById(R.id.patternText);
-		patternTxt.setText(R.id.patternText);
+		//patternTxt.setText(R.id.patternText);
 		patternTxt.setText(chPattern, 0, 2);
 		
-//		EditText patternNmb = (EditText)findViewById(R.id.patternText);
-//		patternNmb.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-//		patternNmb.setText(R.id.patternText);
-//		patternNmb.setText(-6);
+	    StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%02X ", byPattern));		
+		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
+		//patternNmb.setRawInputType(InputType.TYPE_CLASS_NUMBER);		
+		patternNmb.setText(sb);
 		
 		//setText(chPattern, 0, 1);
 		/*try {
