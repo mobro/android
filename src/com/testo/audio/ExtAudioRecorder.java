@@ -4,29 +4,20 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Array;
 
 import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioRecord;
-import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.media.MediaRecorder.AudioSource;
 import android.os.Environment;
 import android.util.Log;
 
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
 
 public class ExtAudioRecorder 
 {
-	private final static int[] sampleRates = {44100, 22050, 11025, 8000};
-	byte byPattern = 0;
 	
 	@SuppressWarnings("deprecation")
 	public static ExtAudioRecorder getInstanse(Boolean recordingCompressed)
@@ -43,7 +34,8 @@ public class ExtAudioRecorder
 		}
 		else
 		{
-			int i=0;
+			int i=0; // Sample rate 44100
+			
 			do
 			{
 				result = new ExtAudioRecorder(	true, 
@@ -59,10 +51,10 @@ public class ExtAudioRecorder
 	
 	/**
 	* INITIALIZING : recorder is initializing;
-	* READY : recorder has been initialized, recorder not yet started
-	* RECORDING : recording
-	* ERROR : reconstruction needed
-	* STOPPED: reset needed
+	* READY: 		recorder has been initialized, recorder not yet started
+	* RECORDING:	recording
+	* ERROR: 		reconstruction needed
+	* STOPPED: 		reset needed
 	*/
 	public enum State {INITIALIZING, READY, RECORDING, ERROR, STOPPED};
 	
@@ -74,28 +66,26 @@ public class ExtAudioRecorder
 	private static final int TIMER_INTERVAL = 120;
 	
 	// Toggles uncompressed recording on/off; RECORDING_UNCOMPRESSED / RECORDING_COMPRESSED
-	private boolean         rUncompressed;
+	private boolean rUncompressed;
 	
 	// Recorder used for uncompressed recording
-	private AudioRecord     audioRecorder = null;
-	private AudioManager	audioManager = null;
-	
+	private AudioRecord audioRecorder = null;
+		
 	// Recorder used for compressed recording
-	private MediaRecorder   mediaRecorder = null;
+	private MediaRecorder mediaRecorder = null;
 	
 	// Stores current amplitude (only in uncompressed mode)
-	private int             cAmplitude= 0;
+	private int cAmplitude= 0;
 	
 	// Output file path
-	private String          filePath = null;
+	private String filePath = null;
 	
 	// Recorder state; see State
-	private State          	state;
+	private State state;
 	
 	// File writer (only in uncompressed mode)
 	private RandomAccessFile randomAccessWriter;
-	
-		       
+			       
 	// Number of channels, sample rate, sample size(size in bits), buffer size, audio source, sample size(see AudioFormat)
 	private short                    nChannels;
 	private int                      sRate;
@@ -115,6 +105,14 @@ public class ExtAudioRecorder
 	private int                      payloadSize;
 	
 	private int 					 iBufSizeWav;
+	
+	private final static int[] sampleRates = {44100, 22050, 11025, 8000};
+	byte byPattern = 0;
+	private static Thread recordingThread;
+	
+	TypeConverter typeConverter = null;
+	
+	WriteWav writeWav = null;
 	
 	/**
 	*
@@ -138,6 +136,7 @@ public class ExtAudioRecorder
 		public void onPeriodicNotification(AudioRecord recorder)
 		{
 			audioRecorder.read(buffer, 0, buffer.length); // Fill buffer
+						
 			try
 			{ 
 				randomAccessWriter.write(buffer); // Write buffer to file
@@ -146,7 +145,7 @@ public class ExtAudioRecorder
 				{
 					for (int i=0; i<buffer.length/2; i++)
 					{ // 16bit sample size
-						short curSample = getShort(buffer[i*2], buffer[i*2+1]);
+						short curSample = typeConverter.getShort(buffer[i*2], buffer[i*2+1]);
 						if (curSample > cAmplitude)
 						{ // Check amplitude
 							cAmplitude = curSample;
@@ -227,9 +226,14 @@ public class ExtAudioRecorder
 				audioRecorder = new AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize);
 
 				if (audioRecorder.getState() != AudioRecord.STATE_INITIALIZED)
+				{
 					throw new Exception("AudioRecord initialization failed");
+				}
 				audioRecorder.setRecordPositionUpdateListener(updateListener);
 				audioRecorder.setPositionNotificationPeriod(framePeriod);
+				
+				typeConverter = new TypeConverter();
+				writeWav = new WriteWav(44100, (short)16, (short)1);
 			} else
 			{ // RECORDING_COMPRESSED
 				mediaRecorder = new MediaRecorder();
@@ -400,9 +404,10 @@ public class ExtAudioRecorder
 	 * 
 	 * 
 	 *  Releases the resources associated with this class, and removes the unnecessary files, when necessary
+	 * @throws Exception 
 	 *  
 	 */
-	public void release()
+	public void release() throws Exception
 	{
 		
 		if (state == State.RECORDING)
@@ -515,9 +520,10 @@ public class ExtAudioRecorder
 	 *  Stops the recording, and sets the state to STOPPED.
 	 * In case of further usage, a reset is needed.
 	 * Also finalizes the wave file in case of uncompressed recording.
+	 * @throws Exception 
 	 * 
 	 */
-	public void stop()
+	public void stop() throws Exception
 	{
 		if (state == State.RECORDING)
 		{
@@ -541,36 +547,7 @@ public class ExtAudioRecorder
 					randomAccessWriter.seek(randomAccessWriter.length()-payloadSize);
 					randomAccessWriter.read(bySrcBuf, 0, bySrcBuf.length);
 					
-					// --- start test
-					/*payloadSize = 12;
-					
-					short s1 = -1;
-					short s2 = +1;
-					short s3 = -1;
-					short s4 = +1;
-					short s5 = -1;
-					short s6 = +1;
-					
-					bySrcBuf[0] = (byte) ((0xff00 & s1) >> 8);
-					bySrcBuf[1] = (byte) (s1 & 0x00ff);
-					bySrcBuf[2] = (byte) ((0xff00 & s2) >> 8);
-					bySrcBuf[3] = (byte) (s2 & 0x00ff);
-					bySrcBuf[4] = (byte) ((0xff00 & s3) >> 8);
-					bySrcBuf[5] = (byte) (s3 & 0x00ff);
-					bySrcBuf[6] = (byte) ((0xff00 & s4) >> 8);
-					bySrcBuf[7] = (byte) (s4 & 0x00ff);
-					bySrcBuf[8] = (byte) ((0xff00 & s5) >> 8);
-					bySrcBuf[9] = (byte) (s5 & 0x00ff);
-					bySrcBuf[10] = (byte) ((0xff00 & s6) >> 8);
-					bySrcBuf[11] = (byte) (s6 & 0x00ff);
-					
-					
-					short s1n = getShort(bySrcBuf[1],bySrcBuf[0]);
-					short s2n = getShort(bySrcBuf[3],bySrcBuf[2]);
-					short s3n = getShort(bySrcBuf[5],bySrcBuf[4]);
-					short s4n = getShort(bySrcBuf[7],bySrcBuf[6]);
-					short s5n = getShort(bySrcBuf[9],bySrcBuf[8]);
-					short s6n = getShort(bySrcBuf[11],bySrcBuf[10]);*/
+
 
 					/*// ------ Erzeugter Sinus wird direkt umgewandelt
 					int amp = 10000;
@@ -586,22 +563,20 @@ public class ExtAudioRecorder
 						bySrcBuf[i*2+1] = (byte) (samples[i] & 0x00ff);
 					}
 					
-					writeWav(samples,buffsize,Environment.getExternalStorageDirectory().getPath() + "/1.wav");
+					writeWav.writeWavShort(samples,buffsize,Environment.getExternalStorageDirectory().getPath() + "/1.wav");
 					
 					Conv2Freq conv2freq = new Conv2Freq(buffsize*2,bySrcBuf);*/
-					
-					
-					
-					// ------- Load a existing .wav file
+										
+					/*// ------- Load a existing .wav file
 					int iSize = 0;
 					iBufSizeWav = 0;
 					bySrcBuf = readWav();
 					payloadSize = iBufSizeWav;
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf);
+					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, 44100,(short)16,(short)1);*/
 					
 					
-					//Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf);
-					
+					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
+					conv2freq.CalcConv2Freq();
 					byPattern = conv2freq.GetPattern();
 					
 					// ------ bhu: End ------
@@ -635,26 +610,14 @@ public class ExtAudioRecorder
 		InputStream is = new FileInputStream (file);
 		
 		// find out the size of the file
-		//int iReturn = 0;
 		int iBufSize = 300000;
-		//while((iReturn!=-1)&&(iBufSize<500000))
-		//{
-		//	iBufSize++;
-		//	iReturn = is.read();
-		//}
 				
 		BufferedInputStream bis = new BufferedInputStream (is,iBufSize);
 		DataInputStream dis = new DataInputStream (bis); // Read audio data from saved file
 		
-		
-		
 		byte byMusic[] = new byte[iBufSize]; // Read the file into the "music" array
 		
-		
-		
 		// Read the header data from *.wav file
-		//int iTemp = dis.readInt();
-		//char cTemp = dis.readChar();		
 		for(int i=0; i<44; i++)
 		{
 			byte byTemp = dis.readByte();
@@ -674,57 +637,7 @@ public class ExtAudioRecorder
 		return byMusic;
 	}
 
-	
 
-	
-	/* 
-	 * 
-	 * Converts a byte[2] to a short, in LITTLE_ENDIAN format
-	 * 
-	 */
-	private short getShort(byte argB1, byte argB2)
-	{
-		short sTest = (short)0x0000;
-		sTest = (short)(0x00ff & argB1);
-		sTest = (short)(sTest | (short)(0xff00 & (argB2 << 8)));
-				
-		return sTest; 
-	}
-	
-	private void writeWav(short[] sBuffer, int iSamples, String PathFileName) throws IOException
-	{
-		// write file header
-		int iPayLoad = iSamples*2;
-		//short[] sBuffer = new short[iSamples];
-		byte[] bBuffer = new byte[iPayLoad];
-		
-		randomAccessWriter = new RandomAccessFile( PathFileName, "rw");
-		randomAccessWriter.setLength(0); // Set file length to 0, to prevent unexpected behavior in case the file already existed
-		randomAccessWriter.writeBytes("RIFF");
-		randomAccessWriter.writeInt(Integer.reverseBytes(36+iPayLoad)); // File size -8 
-		randomAccessWriter.writeBytes("WAVE");
-		randomAccessWriter.writeBytes("fmt ");
-		randomAccessWriter.writeInt(Integer.reverseBytes(16)); // Sub-chunk size, 16 for PCM
-		randomAccessWriter.writeShort(Short.reverseBytes((short) 1)); // AudioFormat, 1 for PCM
-		randomAccessWriter.writeShort(Short.reverseBytes((short) 1));// Number of channels, 1 for mono, 2 for stereo
-		randomAccessWriter.writeInt(Integer.reverseBytes(44100)); // Sample rate
-		randomAccessWriter.writeInt(Integer.reverseBytes(sRate*bSamples*nChannels/8)); // Byte rate, SampleRate*NumberOfChannels*BitsPerSample/8
-		randomAccessWriter.writeShort(Short.reverseBytes((short)(nChannels*bSamples/8))); // Block align, NumberOfChannels*BitsPerSample/8
-		randomAccessWriter.writeShort(Short.reverseBytes(bSamples)); // Bits per sample
-		randomAccessWriter.writeBytes("data"); // Header signature
-		randomAccessWriter.writeInt(Integer.reverseBytes(iPayLoad)); // Data chunk size not known yet, write 0
-										
-		for(int i = 0; i<iSamples; i++)
-		{
-			bBuffer[i*2+1] = (byte) ((0xff00 & sBuffer[i]) >> 8);
-			bBuffer[i*2] = (byte) (sBuffer[i] & 0x00ff);
-		}
-				
-		randomAccessWriter.write(bBuffer); // Write buffer to file
-		randomAccessWriter.close();
-
-	}
-	
 	public byte GetPattern()
 	{
 		return byPattern;

@@ -1,8 +1,6 @@
 package com.testo.audio;
 
 
-
-
 //import org.opencv.samples.puzzle15.Puzzle15Activity;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -37,11 +35,7 @@ import java.io.FileNotFoundException;
 //import android.media.MediaPlayer.OnCompletionListener;
 // MediaPlayer
 
-/**
- * @author Felix Born
- * @date 02.07.2013
- * 
- */
+
 public class MainActivity extends Activity {	
 
 	// Debugging
@@ -60,13 +54,9 @@ public class MainActivity extends Activity {
 	@SuppressWarnings("unused")
 	private ToggleButton toggleStartButton;
 	private ToggleButton togglePlayButton;
-	//private EditText patternTxt;
-    
-    // Audio In Data
-    //private static Short[] series1Numbers;
-    
+	    
 	// Audio recording
-	private static Thread recordingThread;
+	//private static Thread recordingThread;
 	private static boolean isRecording = false;
 	
 	// File Name
@@ -74,24 +64,26 @@ public class MainActivity extends Activity {
 
 	// Audio playing
 	private static Thread playingThread;
-	int sr = 44100;  // Sampling rate
+	
+	
 	boolean isRunning = true;
 	
+		
 	// ExtAudioRecorder
 	ExtAudioRecorder extAudioRecorder;
+	AudioPlayer audioPlayer;
+	
 	static String PATH_REC = (Environment.getExternalStorageDirectory().getPath() + "/record.wav");
-
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 
+    	// Load opencv
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
                 {
-                    Log.i(TAG, "OpenCV loaded successfully");
-
-                    /* Now enable camera view to start receiving frames */
+                    Log.i(TAG, "OpenCV loaded successfully");                  
                     
                 } break;
                 default:
@@ -118,9 +110,7 @@ public class MainActivity extends Activity {
 		togglePlayButton = (ToggleButton) findViewById(R.id.togglebuttonPlayStop);
 		
 		if (D) Log.i(TAG, "AudioRecord Buffer Size in Bytes: " + bufferSizeInBytes);
-		
-		
-        
+		        
         initialize(0);
 	}
 
@@ -139,11 +129,16 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		stopRecording();
-		recordingThread = null;
+		try {
+			stopRecording();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//recordingThread = null;
 	}
 
-	public void buttonStartStop(View v) {
+	public void buttonStartStop(View v) throws Exception {
 		// if Button active - start recording
 		if (((ToggleButton) v).isChecked()) {
 			if (D) Log.i(TAG, "Start");
@@ -159,7 +154,6 @@ public class MainActivity extends Activity {
 		// if Button active - start playing
 		if (((ToggleButton) v).isChecked()) {
 			if (D) Log.i(TAG, "PlayStart");
-			// starts playing thread
 			startPlaying();
 		} else { // not active - stop recording
 			if (D) Log.i(TAG, "PlayStop");
@@ -168,35 +162,8 @@ public class MainActivity extends Activity {
 	}
 	
 	private void startPlaying(){
-		playingThread = new Thread() {
-			public void run(){
-				isRunning = true;
-				// set process priority
-				setPriority(Thread.MAX_PRIORITY);
-				int buffsize = AudioTrack.getMinBufferSize(sr, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
-				// create an audiotrack object
-				AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,sr,AudioFormat.CHANNEL_OUT_MONO,AudioFormat.ENCODING_PCM_16BIT,buffsize,AudioTrack.MODE_STREAM);
-				short samples[] = new short[buffsize];
-				int amp = 5000;
-				double twopi = 8.*Math.atan(1.);
-				double fr = 2400.f;
-				double ph = 0.0;
-				
-				audioTrack.play();
-				
-				// synthesis loop
-				while(isRunning){
-					for(int i = 0; i<buffsize;i++){
-						samples[i]= (short)(amp*Math.sin(ph));
-						ph += twopi*fr/sr;
-					}
-					audioTrack.write(samples,0,buffsize);
-				}
-				audioTrack.stop();
-				audioTrack.release();
-			}
-		};
-		playingThread.start();	
+		audioPlayer = new AudioPlayer();
+		audioPlayer.playAudio();
 	}
 	
 	private void startRecording() {
@@ -207,126 +174,38 @@ public class MainActivity extends Activity {
 		extAudioRecorder.setOutputFile( PATH_REC );
 		extAudioRecorder.prepare();
 		extAudioRecorder.start();
-
-		/*aRecorder = new AudioRecord(audioSource, sampleRateInHz, channelConfig,
-		audioFormat, bufferSizeInBytes);
-		aRecorder.startRecording();
-		isRecording = true;
-		
-		// new Thread for recording
-		recordingThread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				Short[] recordData = recordAudioData();
-				// if record is stopped, save data
-				try {
-					// create file
-					FileOutputStream fos = openFileOutput(FILE_NAME_RECORD, Context.MODE_PRIVATE);
-					fos.close();
-					// save Data
-					PcmWriter pcmWriter = new PcmWriter(FILE_NAME_RECORD, recordData);
-					pcmWriter.saveFile();
-				} catch (IOException e) {
-					Log.e(TAG, "IOExeption in recording Thread");
-				}
-				recordingThread = null;
-			}
-		});
-		recordingThread.start();*/
 	}
 	
 	private void stopPlaying(){
 		// terminate thread
-		isRunning = false;
-		try{
-			playingThread.join();
-		}catch (InterruptedException e){
-			e.printStackTrace();
-		}
-		playingThread = null;
+		audioPlayer.stopPlaying();
 	}
 	
-	private void stopRecording() {
+	private void stopRecording() throws Exception {
 		byte byPattern = 0;
 		
 		// Stop recording
 		extAudioRecorder.stop();
 		extAudioRecorder.release();
 		
-		char[] chPattern = new char[5];  
-		
-		
 		byPattern = extAudioRecorder.GetPattern();
-		
-		if(byPattern == -71)
-		{
-			chPattern[0] =	'O';
-			chPattern[1] =	'K';
-			
-		}
-		else
-		{
-			chPattern[0] =	'K';
-			chPattern[1] =	'O';
-		}
-		
-		
-		
-		EditText patternTxt = (EditText)findViewById(R.id.patternText);
-		//patternTxt.setText(R.id.patternText);
-		patternTxt.setText(chPattern, 0, 2);
 		
 	    StringBuilder sb = new StringBuilder();
         sb.append(String.format("%02X ", byPattern));		
 		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
-		//patternNmb.setRawInputType(InputType.TYPE_CLASS_NUMBER);		
 		patternNmb.setText(sb);
-		
-		//setText(chPattern, 0, 1);
-		/*try {
-			FileInputStream fis = openFileInput(PATH_REC);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
-		
-		// terminate thread
-		/*isRecording = false;
+				
+		// terminate recording thread
+		isRecording = false;
 		if (aRecorder != null) {
 			if(aRecorder.getState() == AudioRecord.STATE_INITIALIZED)
+			{
 				aRecorder.stop();
+			}
+				
 			aRecorder.release();
 			aRecorder = null;
-		}*/
-	}
-
-
-	
-	/*private Short[] recordAudioData() {
-		ArrayList<Short> data = new ArrayList<Short>();
-		short dataBuffer[] = new short[bufferSizeInBytes];
-		// received bytes by recorder
-		int read = 0;
-		// counter to update display
-
-		while(isRecording) {
-			read = aRecorder.read(dataBuffer, 0, bufferSizeInBytes);
-			if(AudioRecord.ERROR_INVALID_OPERATION != read) {
-				// copy everything into data to get the whole record
-				for (int i = 0; i < read; ++i) {
-					data.add(dataBuffer[i]);
-					//series1Numbers[i] =  dataBuffer[i];
-				}
-			}
-
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
 		}
-		return data.toArray(new Short[data.size()]);
-	}*/
+		
+	}
 }
