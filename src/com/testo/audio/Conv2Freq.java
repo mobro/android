@@ -40,7 +40,7 @@ public class Conv2Freq {
 	
 	int iMaxValue = 0; 
 	int iMaxIndex = 0;
-	int iFilterWidth = 500;  // Value in Hz
+	int iFilterWidth = 200;  // Value in Hz
 	
 	short[] sSrcBuf = null;		// Buffer stream containing sound samples (short 16 bit signed)
 	
@@ -114,12 +114,16 @@ public class Conv2Freq {
 		iMaxIndex = maxValIndex.GetMaxIndex();
 		iMaxValue = maxValIndex.GetMaxValue();
 		
+		// Calculate index of the 2,4kHz Signal =
+		// ( Length of the signal ) / ( sf * 2400 Hz ) 
+		int i2k4Index = (iSamples * 2400) / 44100;
+					
 		// Put a 1kHz wide window over the frequency signal at the max amplitude 
 		// Band width is samples times filter width divided by half SampleRate 
 		// Band width = ((Samples)*500Hz)/(44100/2)
 		int iBandWidth = ((iSamples)*iFilterWidth)/(iSampleRate/2);
-		int iRightBoarder = (iMaxIndex*2)+iBandWidth;
-		int iLeftBoarder = (iMaxIndex*2)-iBandWidth;
+		int iRightBoarder = (i2k4Index*2)+iBandWidth;
+		int iLeftBoarder = (i2k4Index*2)-iBandWidth;
 		
 		for(int i = 0; i < ((iSamples)); i++)
 		{

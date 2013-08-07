@@ -567,17 +567,18 @@ public class ExtAudioRecorder
 					
 					Conv2Freq conv2freq = new Conv2Freq(buffsize*2,bySrcBuf);*/
 										
-					/*// ------- Load a existing .wav file
+					// ------- Load a existing .wav file
 					int iSize = 0;
 					iBufSizeWav = 0;
 					bySrcBuf = readWav();
 					payloadSize = iBufSizeWav;
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, 44100,(short)16,(short)1);*/
-					
-					
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
+					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, 44100,(short)16,(short)1);
 					conv2freq.CalcConv2Freq();
 					byPattern = conv2freq.GetPattern();
+					
+					//Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
+					//conv2freq.CalcConv2Freq();
+					//byPattern = conv2freq.GetPattern();
 					
 					// ------ bhu: End ------
 					
@@ -605,12 +606,12 @@ public class ExtAudioRecorder
 	// Read a existing *.wav file from sdCard
 	private byte[] readWav() throws IOException
 	{
-		File file = new File(Environment.getExternalStorageDirectory()+"/da.wav");
+		File file = new File(Environment.getExternalStorageDirectory()+"/WAVERECORDER/20130801115553_16000.wav");
 		//File file = new File(Environment.getExternalStorageDirectory()+"/sin2.wav");
 		InputStream is = new FileInputStream (file);
 		
 		// find out the size of the file
-		int iBufSize = 300000;
+		int iBufSize = 1200000;
 				
 		BufferedInputStream bis = new BufferedInputStream (is,iBufSize);
 		DataInputStream dis = new DataInputStream (bis); // Read audio data from saved file

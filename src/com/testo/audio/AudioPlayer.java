@@ -11,7 +11,7 @@ public class AudioPlayer {
 
 	private int sr = 44100;  	// Sampling rate
 	private double fr = 2400.f; // Carrier frequency 
-	int amp = 5000;				// Amplitude
+	int amp = 10000;				// Amplitude
 	double ph = 0.0;			// Signal phase
 	
 	public AudioPlayer()
