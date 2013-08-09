@@ -20,5 +20,16 @@ public class TypeConverter {
 				
 		return sTest; 
 	}
-	
+
+	public int getInt(byte argB1, byte argB2, byte argB3, byte argB4)
+	{
+		int iInt = (int)0x00000000;
+		
+		iInt = (int)(0x000000ff & argB1);
+		iInt = (int)(iInt | (int)(0x0000ff00 & (argB2<<8)));
+		iInt = (int)(iInt | (int)(0x00ff0000 & (argB3<<16)));
+		iInt = (int)(iInt | (int)(0xff000000 & (argB4<<24)));
+		
+		return iInt;
+	}
 }

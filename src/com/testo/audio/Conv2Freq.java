@@ -17,6 +17,8 @@ import android.os.Environment;
 public class Conv2Freq {
 	private short sChannels = 1;
 	private int iSampleRate = 44100;
+	private int iSamplPerBit = 12;
+	private int iCarrierFreq = 2400; // Carrier Frequency in Hz
 	private short sSamples = 16;
 	byte byPattern = 0;
 	int iSamples = 0; 
@@ -116,7 +118,7 @@ public class Conv2Freq {
 		
 		// Calculate index of the 2,4kHz Signal =
 		// ( Length of the signal ) / ( sf * 2400 Hz ) 
-		int i2k4Index = (iSamples * 2400) / 44100;
+		int i2k4Index = (iSamples * 2400) / iSampleRate;
 					
 		// Put a 1kHz wide window over the frequency signal at the max amplitude 
 		// Band width is samples times filter width divided by half SampleRate 
@@ -214,8 +216,11 @@ public class Conv2Freq {
 		{
 			byStream[iIdx] = (byte) ibuffTime[iIdx];
 		}
-					
-		patFilter = new PatternFilter(byStream, iSamples, 0, 220);
+			
+		float fSampleRate = (float)((float)iSampleRate/(float)iCarrierFreq);
+		fSampleRate = fSampleRate * iSamplPerBit; 
+		
+		patFilter = new PatternFilter(byStream, iSamples, 0, fSampleRate);
 		
 		if(true==patFilter.CalcPattern())
 		{

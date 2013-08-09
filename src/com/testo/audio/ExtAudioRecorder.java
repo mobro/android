@@ -114,6 +114,8 @@ public class ExtAudioRecorder
 	
 	WriteWav writeWav = null;
 	
+	private int iReadSampleRate = 0;
+	
 	/**
 	*
 	* Returns the state of the recorder in a RehearsalAudioRecord.State typed object.
@@ -546,9 +548,7 @@ public class ExtAudioRecorder
 					
 					randomAccessWriter.seek(randomAccessWriter.length()-payloadSize);
 					randomAccessWriter.read(bySrcBuf, 0, bySrcBuf.length);
-					
-
-
+		
 					/*// ------ Erzeugter Sinus wird direkt umgewandelt
 					int amp = 10000;
 					double twopi = 8.*Math.atan(1.);
@@ -572,7 +572,7 @@ public class ExtAudioRecorder
 					iBufSizeWav = 0;
 					bySrcBuf = readWav();
 					payloadSize = iBufSizeWav;
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, 44100,(short)16,(short)1);
+					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, iReadSampleRate,(short)16,(short)1);
 					conv2freq.CalcConv2Freq();
 					byPattern = conv2freq.GetPattern();
 					
@@ -606,7 +606,7 @@ public class ExtAudioRecorder
 	// Read a existing *.wav file from sdCard
 	private byte[] readWav() throws IOException
 	{
-		File file = new File(Environment.getExternalStorageDirectory()+"/WAVERECORDER/20130801115553_16000.wav");
+		File file = new File(Environment.getExternalStorageDirectory()+"/WAVERECORDER/20130808152550_16000.wav");
 		//File file = new File(Environment.getExternalStorageDirectory()+"/sin2.wav");
 		InputStream is = new FileInputStream (file);
 		
@@ -619,10 +619,7 @@ public class ExtAudioRecorder
 		byte byMusic[] = new byte[iBufSize]; // Read the file into the "music" array
 		
 		// Read the header data from *.wav file
-		for(int i=0; i<44; i++)
-		{
-			byte byTemp = dis.readByte();
-		}
+		readWavHeader(dis);
 		
 		int i = 0;
 		while((dis.available()>0)&&(i<iBufSize))
@@ -638,6 +635,21 @@ public class ExtAudioRecorder
 		return byMusic;
 	}
 
+	void readWavHeader(DataInputStream dis) throws IOException
+	{
+		byte bySize = 44;
+		byte[] byTemp = new byte[bySize];
+
+		TypeConverter typeConverter = new TypeConverter();
+				
+		for(int i=0; i<bySize; i++)
+		{
+			byTemp[i] = dis.readByte();
+		}
+
+		iReadSampleRate = typeConverter.getInt(byTemp[24], byTemp[25], byTemp[26], byTemp[27]);
+
+	}
 
 	public byte GetPattern()
 	{

@@ -21,13 +21,13 @@ public class PatternFilter {
 	// iSize: Number of bytes to search in
 	// iIndex: Start Index
 	// SPB: Samples per bit = (sample frequency/carrier frequency)*Number of periods per bit
-	public PatternFilter(byte[] byBuffer, int iS, int iIdx, int SamPerBit)
+	public PatternFilter(byte[] byBuffer, int iS, int iIdx, float fSamPerBit)
 	{
-		Initialize(byBuffer, iS, iIdx, SamPerBit);
+		Initialize(byBuffer, iS, iIdx, fSamPerBit);
 	}
 	
 	
-	private void Initialize(byte[] byBuffer, int iS, int iIdx, int SamPerBit)
+	private void Initialize(byte[] byBuffer, int iS, int iIdx, float fSamPerBit)
 	{
 		// Initialize the byte buffer
 		if(byBuffer != null)
@@ -40,7 +40,7 @@ public class PatternFilter {
 		
 		iIndex = iIdx;
 		iSize = iS;
-		iSPB = SamPerBit;
+		iSPB = (int)fSamPerBit;
 	}
 
 	public byte GetPattern()
@@ -84,8 +84,7 @@ public class PatternFilter {
 							byPattern = (byte) (byPattern | (0x00) << iLoop);
 						}
 					}
-					
-					
+										
 					bSuccess = true;
 				}
 			}			

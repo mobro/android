@@ -33,7 +33,7 @@ public class WriteWav {
 		randomAccessWriter.writeInt(Integer.reverseBytes(16)); // Sub-chunk size, 16 for PCM
 		randomAccessWriter.writeShort(Short.reverseBytes((short) 1)); // AudioFormat, 1 for PCM
 		randomAccessWriter.writeShort(Short.reverseBytes((short) 1));// Number of channels, 1 for mono, 2 for stereo
-		randomAccessWriter.writeInt(Integer.reverseBytes(44100)); // Sample rate
+		randomAccessWriter.writeInt(Integer.reverseBytes(iSampleRate)); // Sample rate
 		randomAccessWriter.writeInt(Integer.reverseBytes(iSampleRate*sSamples*sChannels/8)); // Byte rate, SampleRate*NumberOfChannels*BitsPerSample/8
 		randomAccessWriter.writeShort(Short.reverseBytes((short)(sChannels*sSamples/8))); // Block align, NumberOfChannels*BitsPerSample/8
 		randomAccessWriter.writeShort(Short.reverseBytes(sSamples)); // Bits per sample
@@ -67,7 +67,7 @@ public class WriteWav {
 		randomAccessWriter.writeInt(Integer.reverseBytes(16)); // Sub-chunk size, 16 for PCM
 		randomAccessWriter.writeShort(Short.reverseBytes((short) 1)); // AudioFormat, 1 for PCM
 		randomAccessWriter.writeShort(Short.reverseBytes((short) 1));// Number of channels, 1 for mono, 2 for stereo
-		randomAccessWriter.writeInt(Integer.reverseBytes(44100)); // Sample rate
+		randomAccessWriter.writeInt(Integer.reverseBytes(iSampleRate)); // Sample rate
 		randomAccessWriter.writeInt(Integer.reverseBytes(iSampleRate*sSamples*sChannels/8)); // Byte rate, SampleRate*NumberOfChannels*BitsPerSample/8
 		randomAccessWriter.writeShort(Short.reverseBytes((short)(sChannels*sSamples/8))); // Block align, NumberOfChannels*BitsPerSample/8
 		randomAccessWriter.writeShort(Short.reverseBytes(sSamples)); // Bits per sample
