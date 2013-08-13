@@ -189,7 +189,7 @@ public class Conv2Freq {
 		// -------- calculate the threshold, half maximum value
 		Core.MinMaxLocResult mRes = Core.minMaxLoc(mF2T);
 		
-		dThresHold = mRes.maxVal/2;
+		dThresHold = mRes.maxVal/3;
 		
 		for(int i=0;i<iSamples;i++)
 		{
@@ -228,7 +228,8 @@ public class Conv2Freq {
 		}
 		else
 		{
-			throw new Exception("Pattern Calculation went wrong!");
+			byPattern = 0;
+			//throw new Exception("Pattern Calculation went wrong!");
 			// The calculation of the pattern went wrong.
 		}
 	}

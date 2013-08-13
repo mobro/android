@@ -8,13 +8,16 @@ public class PatternFilter {
 	
 	
 	private int iIndex = 0;
-	private int iStartBitIndex = 0;
+	private int iStartBitIndex = 0; // Index of the first sample of the start bit
 	private int iSize = 0;
 	private byte[] byStream;
 	boolean bFoundStart = false;
 	boolean bIsBit = false;
 	int iSPB = 220; // (44100/2400)*12
-	byte byPattern;
+	private byte byPattern;
+	enum BitLevel {eLow,eHigh};
+	enum SearchState {eFound,eNotFound,ePending};
+	private SearchState searchState = SearchState.ePending;
 	
 	// Constructor
 	// byBuffer: Data vector
@@ -41,6 +44,7 @@ public class PatternFilter {
 		iIndex = iIdx;
 		iSize = iS;
 		iSPB = (int)fSamPerBit;
+		byPattern = 0;
 	}
 
 	public byte GetPattern()
@@ -51,28 +55,141 @@ public class PatternFilter {
 	public boolean CalcPattern()
 	{
 		boolean bSuccess = false;
+		
+		// Search the start bit in the byte data stream
+		while(searchState == SearchState.ePending)
+		{
+			bFoundStart = FindHighSample();
+			if(false != bFoundStart)
+			{
+				// the start bit was found, check the start byte
+				if(true == CheckStartPattern() && (searchState!=SearchState.eNotFound))
+				{	
+					if(ReadDataPattern())
+					{
+						searchState = SearchState.eFound;	
+						bSuccess = true;
+					}
+				}
+			}
+			else
+			{
+				// There was no start bit 
+				searchState = SearchState.eNotFound;
+			}
+		}
+		
+		return bSuccess;  
+	}
+	
+
+	
+	// Find the first "bit" in the byte stream which contains the pattern
+	private boolean FindHighSample()
+	{
+		boolean bFound = false;
+				
+		while((bFound != true) && (iIndex<iSize))
+		{
+			if(byStream[iIndex]!=0) 
+			{
+				// The first one was found, this should be the start bit
+				bFound = IsBit(BitLevel.eHigh,55);
+			}
+			
+			iIndex++;
+		}
+		
+		if(!(iIndex<iSize))
+		{
+			searchState = SearchState.eNotFound;
+		}
+		
+		return bFound; 
+	}
+	
+	
+	// check if the bit contains more then threshold ones in percent
+	private boolean IsBit(BitLevel bitLevel, int iThreshold)
+	{
+		boolean bIs = false;
+		int iNum = 0;
+		//int iThreshold = 50; // Value in percent
+		int iPercental = 0;
+		int iStartIndex = iIndex;
+		
+		// check if the bit contains a minimum amount of one's (samples where the signal is higher than a certain threshold)
+		while((iIndex < (iSPB+iStartIndex)) && (iIndex < iSize))
+		{
+			if(bitLevel == BitLevel.eLow)
+			{
+				if(byStream[iIndex] != 1)
+				{
+					iNum++;
+				}
+			}
+			else
+			{
+				if(byStream[iIndex] != 0)
+				{
+					iNum++;
+				}
+			}
+				
+			iIndex++;
+		}
+		
+		if(!(iIndex < iSize))
+		{
+			searchState = SearchState.eNotFound;
+		}
+		
+		if(searchState != SearchState.eNotFound)
+		{
+			// Calculate the percent value
+			iPercental = 100*iNum/iSPB;
+			
+			// Decide if the bit is high or low
+			if(iPercental >= iThreshold)
+			{
+				bIs = true;
+				iStartBitIndex = iStartIndex;
+			}			
+		}
+		
+		return bIs; 		
+	}
+	
+	private boolean ReadDataPattern()
+	{
+		boolean bSucceeded = false;
 		byte[] byPattBuff = {0,0,0,0,0,0,0,0};
 		
 		if(byPattBuff != null)
 		{
-			// Search a one in the byte data stream
-			bFoundStart = FindOne();
-			if(false!=bFoundStart)
+			if(true==FindHighSample())
 			{
-				// Check if the first bit contains only one's
-				bIsBit = IsBit();
-				
-				if(false != bIsBit)
+				// The start bit was detected
+				for(int iIdx = 7; iIdx >= 0; iIdx--)
 				{
-					// the start bit was found
-					byPattBuff[0] = 1;
-					
-					for(int iIdx = 1; iIdx < 8; iIdx++)
+					// Read the value of the bit in the pattern
+					// byPattBuff[iIdx] = byStream[(iStartBitIndex+(iSPB/2)+(iIdx*iSPB))];
+					if(BitLevel.eHigh != BitIs(65))
 					{
-						// Read the value of the bit in the pattern
-						byPattBuff[iIdx] = byStream[(iStartBitIndex+(iSPB/2)+(iIdx*iSPB))];
+						byPattBuff[iIdx] = 0;
 					}
-								
+					else
+					{
+						byPattBuff[iIdx] = 1;
+					}
+				}
+
+				// check the parity bit
+				if(IsBit(BitLevel.eHigh, 50))
+				{
+					bSucceeded = true;
+					
+					// Code the eight bits into one byte
 					for(int iLoop = 0; iLoop < 8; iLoop++)
 					{
 						if(byPattBuff[iLoop]==1)
@@ -83,57 +200,82 @@ public class PatternFilter {
 						{
 							byPattern = (byte) (byPattern | (0x00) << iLoop);
 						}
-					}
-										
-					bSuccess = true;
+					}	
 				}
-			}			
-		}
-
-		
-		return bSuccess;  
-	}
-	
-
-	
-	// Find the first "bit" in the byte stream which contains the pattern
-	private boolean FindOne()
-	{
-		boolean bFound = false;
-				
-		while((bFound != true) && (iIndex<iSize))
-		{
-			if(byStream[iIndex]!=0) 
-			{
-				// The first one was found, this should be the start bit
-				bFound = true;
-				iStartBitIndex = iIndex; 
 			}
-			
-			iIndex++;
 		}
 		
-		return bFound; 
+		return bSucceeded;
+	}
+	
+
+	
+	// Following pattern is expected!
+	//  _ _   _   _   _   
+	// | | |_| |_| |_| |_ _
+	// Start	pattern		parity
+	
+	// Check the pattern of the first eight bit (01010101)
+	boolean CheckStartPattern()
+	{
+		boolean bFound = true; 
+		byte byLoop = 0;
+
+		while((byLoop < 8) && (bFound != false))
+		{
+			if(0 != (byLoop%2))
+			{ 
+				// All odd values are low
+				bFound = IsBit(BitLevel.eLow,60);
+			}
+			else
+			{
+				// All even values are high
+				bFound = IsBit(BitLevel.eHigh,60);
+			}
+			byLoop++;
+		}
+		
+		if(false != bFound)
+		{
+			// Check the parity bit
+			bFound = IsBit(BitLevel.eLow,55);
+		}
+				
+		return bFound;
 	}
 	
 	
-	// check if the bit contains just one's
-	private boolean IsBit()
+	// Check if the bit has high or low level
+	BitLevel BitIs(int iThreshold)
 	{
-		boolean bIs = true;
+		BitLevel bL = BitLevel.eHigh;
+		int iNumZeros = 0;
+		int iPercentalZeros = 0;
+		int iStartIndex = iIndex;
 		
-		// check the whole bit width contains one's
-		while((bIs != true) && (iIndex < iSPB))
+		// check if the bit contains a minimum amount of one's (samples where the signal is higher than a certain threshold)
+		while((iIndex < (iSPB+iStartIndex)) && (iIndex < iSize))
 		{
-			if(1 != byStream[iIndex]) 
+			if(byStream[iIndex] != 1)
 			{
-				bIs = false;
+				iNumZeros++;
 			}
 					
 			iIndex++;
 		}
 		
-		return bIs; 		
+		// Calculate the percent value of zero samples
+		iPercentalZeros = 100*iNumZeros/iSPB;
+		
+		// Decide if the bit is high or low
+		if(iPercentalZeros >= iThreshold)
+		{
+			bL = BitLevel.eLow;
+			iStartBitIndex = iStartIndex;
+		}
+		
+		
+		return bL;
 	}
-	
 }

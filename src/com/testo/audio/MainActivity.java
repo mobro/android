@@ -167,6 +167,12 @@ public class MainActivity extends Activity {
 	}
 	
 	private void startRecording() {
+		
+	    StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%02X ", 0));		
+		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
+		patternNmb.setText(sb);
+		
 		// Start recording
 		//extAudioRecorder = ExtAudioRecorder.getInstanse(true);	  // Compressed recording (AMR)
 		extAudioRecorder = ExtAudioRecorder.getInstanse(false); // Uncompressed recording (WAV)
