@@ -12,7 +12,7 @@
   </class>  
   <class id="2" language="java" name="com.testo.audio.WriteWav" project="Audio" 
     file="/Audio/src/com/testo/audio/WriteWav.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="603" y="1480"/>    
+    <position height="-1" width="-1" x="699" y="1359"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -39,7 +39,7 @@
   </class>  
   <enumeration id="5" language="java" name="com.testo.audio.PatternFilter.SearchState" project="Audio" 
     file="/Audio/src/com/testo/audio/PatternFilter.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="283" y="1437"/>    
+    <position height="-1" width="-1" x="319" y="899"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -48,7 +48,7 @@
   </enumeration>  
   <enumeration id="6" language="java" name="com.testo.audio.PatternFilter.BitLevel" project="Audio" 
     file="/Audio/src/com/testo/audio/PatternFilter.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="400" y="1519"/>    
+    <position height="-1" width="-1" x="335" y="1062"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -57,7 +57,7 @@
   </enumeration>  
   <class id="7" language="java" name="com.testo.audio.TypeConverter" project="Audio" 
     file="/Audio/src/com/testo/audio/TypeConverter.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="737" y="1209"/>    
+    <position height="-1" width="-1" x="273" y="1373"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" accessors="true" 
       visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -110,99 +110,75 @@
     </display>  
   </class>  
   <association id="13">    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="14" name="writeWav"/>      
+    <bendpoint x="646" y="1342"/>    
+    <end type="SOURCE" refId="12" navigable="false">      
+      <attribute id="14" name="typeConverter"/>      
       <multiplicity id="15" minimum="0" maximum="1"/>    
     </end>    
-    <end type="TARGET" refId="2" navigable="true"/>    
+    <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="16">    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="17" name="patFilter"/>      
-      <multiplicity id="18" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="10" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="19">    
     <end type="SOURCE" refId="10" navigable="false">      
-      <attribute id="20" name="searchState"/>      
-      <multiplicity id="21" minimum="0" maximum="1"/>    
+      <attribute id="17" name="searchState"/>      
+      <multiplicity id="18" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="5" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="22">    
+  <nesting id="19">    
+    <end type="SOURCE" refId="10"/>    
+    <end type="TARGET" refId="5"/>  
+  </nesting>  
+  <association id="20">    
     <end type="SOURCE" refId="11" navigable="false">      
-      <attribute id="23" name="data"/>      
-      <multiplicity id="24" minimum="0" maximum="1"/>    
+      <attribute id="21" name="data"/>      
+      <multiplicity id="22" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <nesting id="25">    
-    <end type="SOURCE" refId="10"/>    
-    <end type="TARGET" refId="5"/>  
-  </nesting>  
-  <association id="26">    
-    <bendpoint x="646" y="1342"/>    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="27" name="typeConverter"/>      
-      <multiplicity id="28" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <dependency id="29">    
+  <dependency id="23">    
     <end type="SOURCE" refId="12"/>    
     <end type="TARGET" refId="9"/>  
   </dependency>  
-  <nesting id="30">    
+  <nesting id="24">    
     <end type="SOURCE" refId="10"/>    
     <end type="TARGET" refId="6"/>  
   </nesting>  
-  <association id="31">    
+  <nesting id="25">    
+    <end type="SOURCE" refId="12"/>    
+    <end type="TARGET" refId="8"/>  
+  </nesting>  
+  <association id="26">    
     <end type="SOURCE" refId="4" navigable="false">      
-      <attribute id="32" name="audioPlayer"/>      
-      <multiplicity id="33" minimum="0" maximum="1"/>    
+      <attribute id="27" name="audioPlayer"/>      
+      <multiplicity id="28" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="11" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="34">    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="35" name="typeConverter"/>      
-      <multiplicity id="36" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <nesting id="37">    
-    <end type="SOURCE" refId="12"/>    
-    <end type="TARGET" refId="8"/>  
-  </nesting>  
-  <association id="38">    
-    <bendpoint x="625" y="1342"/>    
-    <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="39" name="writeWav"/>      
-      <multiplicity id="40" minimum="0" maximum="1"/>    
-    </end>    
-    <end type="TARGET" refId="2" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="41">    
+  <association id="29">    
     <end type="SOURCE" refId="4" navigable="false">      
-      <attribute id="42" name="extAudioRecorder"/>      
-      <multiplicity id="43" minimum="0" maximum="1"/>    
+      <attribute id="30" name="extAudioRecorder"/>      
+      <multiplicity id="31" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="12" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="44">    
+  <association id="32">    
+    <bendpoint x="625" y="1342"/>    
     <end type="SOURCE" refId="12" navigable="false">      
-      <attribute id="45" name="state"/>      
-      <multiplicity id="46" minimum="0" maximum="1"/>    
+      <attribute id="33" name="writeWav"/>      
+      <multiplicity id="34" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="2" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="35">    
+    <end type="SOURCE" refId="12" navigable="false">      
+      <attribute id="36" name="state"/>      
+      <multiplicity id="37" minimum="0" maximum="1"/>    
     </end>    
     <end type="TARGET" refId="8" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  

@@ -1,5 +1,5 @@
-android
-=======
+audio-android
+=============
 
 Description:
 record and play *.wav files and do some opencv signal manipulation
