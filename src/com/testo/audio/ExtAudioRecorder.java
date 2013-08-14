@@ -543,7 +543,6 @@ public class ExtAudioRecorder
 				
 					
 					// ------ bhu: Start ------
-					
 					byte[] bySrcBuf = new byte[(int)payloadSize];
 					
 					randomAccessWriter.seek(randomAccessWriter.length()-payloadSize);
@@ -576,9 +575,12 @@ public class ExtAudioRecorder
 					conv2freq.CalcConv2Freq();
 					byPattern = conv2freq.GetPattern();*/
 					
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
-					conv2freq.CalcConv2Freq();
-					byPattern = conv2freq.GetPattern();
+					if(payloadSize>0)
+					{
+						Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
+						conv2freq.CalcConv2Freq();
+						byPattern = conv2freq.GetPattern();
+					}
 					
 					// ------ bhu: End ------
 					
@@ -607,7 +609,7 @@ public class ExtAudioRecorder
 	private byte[] readWav() throws IOException
 	{
 		//File file = new File(Environment.getExternalStorageDirectory()+"/WAVERECORDER/20130812163819_16000.wav");
-		File file = new File(Environment.getExternalStorageDirectory()+"/rec.wav");
+		File file = new File(Environment.getExternalStorageDirectory()+"/r.wav");
 		InputStream is = new FileInputStream (file);
 		
 		// find out the size of the file

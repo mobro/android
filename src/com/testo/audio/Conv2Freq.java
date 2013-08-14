@@ -28,7 +28,7 @@ public class Conv2Freq {
 	TypeConverter typeConverter = null;
 	WriteWav writeWav = null;
 	
-	private static final boolean enableDebug = true; // Set to false if no debug is needed
+	private static final boolean enableDebug = false; // Set to false if no debug is needed
 	
 	PatternFilter patFilter = null;
 	
@@ -111,10 +111,7 @@ public class Conv2Freq {
 		}
 		
 		// Search for the maximum value in the frequency data stream 
-		MaxValIndex maxValIndex = new MaxValIndex();
-		maxValIndex.CalcMaxValIndex( buffMag, iSamples/2);
-		iMaxIndex = maxValIndex.GetMaxIndex();
-		iMaxValue = maxValIndex.GetMaxValue();
+		CalcMaxValIndex( buffMag, iSamples/2);
 		
 		// Calculate index of the 2,4kHz Signal =
 		// ( Length of the signal ) / ( sf * 2400 Hz ) 
@@ -238,6 +235,21 @@ public class Conv2Freq {
 	public byte GetPattern()
 	{
 		return byPattern;
+	}
+	
+	public void CalcMaxValIndex(int[] iBuffer, int iValues)
+	{
+		for(int i = 0; i < ((iValues/2)); i++)
+		{
+		    int iValue = iBuffer[i];
+						
+			if(iValue > iMaxValue)
+			{
+				iMaxIndex = i;
+				iMaxValue = iValue;
+			}
+		}
+		
 	}
 	
 }

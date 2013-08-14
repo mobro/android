@@ -20,17 +20,20 @@ import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ToggleButton;
+import android.widget.Button;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-
+import java.util.TimerTask;
+import java.util.Timer;
 
 //import android.media.MediaPlayer.OnCompletionListener;
 // MediaPlayer
@@ -54,6 +57,7 @@ public class MainActivity extends Activity {
 	@SuppressWarnings("unused")
 	private ToggleButton toggleStartButton;
 	private ToggleButton togglePlayButton;
+	private Button buttonAuthentication;
 	    
 	// Audio recording
 	//private static Thread recordingThread;
@@ -74,6 +78,10 @@ public class MainActivity extends Activity {
 	AudioPlayer audioPlayer;
 	
 	static String PATH_REC = (Environment.getExternalStorageDirectory().getPath() + "/record.wav");
+
+	// Initialize variables for timer
+	TimerTask timerTask = null;
+	Timer timer = null;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 
@@ -108,7 +116,8 @@ public class MainActivity extends Activity {
 		
 		toggleStartButton = (ToggleButton) findViewById(R.id.toggleButtonStartStop);
 		togglePlayButton = (ToggleButton) findViewById(R.id.togglebuttonPlayStop);
-		
+		//buttonAuthentication = (Button) findViewById(R.id.buttonAuthenticate) ;
+
 		if (D) Log.i(TAG, "AudioRecord Buffer Size in Bytes: " + bufferSizeInBytes);
 		        
         initialize(0);
@@ -161,6 +170,34 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	public void buttonAuthent(View v) throws Exception {
+		if(((Button) v).isEnabled())
+		{
+			// Create mechanism to stop the recording after 5 seconds
+	        timer = new Timer();
+	        
+			timerTask = new TimerTask() {
+	            public void run() 
+	            {
+					try {
+						stopRecording();
+						timerTask.wait();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						timer.cancel();
+						//e.printStackTrace();
+						
+					}
+	            }
+	        };
+	        
+	        timer.schedule(timerTask, 4000);
+
+			// Start the recording
+			startRecording();
+		}
+	}
+	
 	private void startPlaying(){
 		audioPlayer = new AudioPlayer();
 		audioPlayer.playAudio();
@@ -196,7 +233,7 @@ public class MainActivity extends Activity {
 		
 		byPattern = extAudioRecorder.GetPattern();
 		
-	    StringBuilder sb = new StringBuilder();
+ 	    StringBuilder sb = new StringBuilder();
         sb.append(String.format("%02X ", byPattern));		
 		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
 		patternNmb.setText(sb);
