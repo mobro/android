@@ -17,6 +17,6 @@ Installation OpenCV (OpenCV-2.4.6-android-sdk) in Android requires the following
 A description how to develop android with the OpenCV take a look a this site:
 http://docs.opencv.org/doc/tutorials/introduction/android_binary_package/dev_with_OCV_on_Android.html#dev-with-ocv-on-android
 
-
+The picture 2BytePattern.bmp shows how the pattern looks.
 
 
