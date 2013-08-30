@@ -116,6 +116,12 @@ public class ExtAudioRecorder
 	
 	private int iReadSampleRate = 0;
 	
+	// find out the size of the file
+	private static final int iBufSize = 1200000;
+	private byte byMusic[] = new byte[iBufSize]; // Read the file into the "music" array
+	
+	private int iSigQual;
+	
 	/**
 	*
 	* Returns the state of the recorder in a RehearsalAudioRecord.State typed object.
@@ -569,17 +575,27 @@ public class ExtAudioRecorder
 					/*// ------- Load a existing .wav file
 					int iSize = 0;
 					iBufSizeWav = 0;
-					bySrcBuf = readWav();
-					payloadSize = iBufSizeWav;
-					Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, iReadSampleRate,(short)16,(short)1);
-					conv2freq.CalcConv2Freq();
-					byPattern = conv2freq.GetPattern();*/
+					if(readWav())
+					{
+						bySrcBuf = byMusic;
+						payloadSize = iBufSizeWav;
+						Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf, iReadSampleRate,(short)16,(short)1);
+						conv2freq.CalcConv2Freq();
+						byPattern = conv2freq.GetPattern();
+					}
+					else
+					{
+						// The recorded wave file was bigger than the default size of byMusic[]
+						byPattern = 1;
+					}*/
+					 					
 					
 					if(payloadSize>0)
 					{
 						Conv2Freq conv2freq = new Conv2Freq(payloadSize, bySrcBuf,44100,(short)16,(short)1);
 						conv2freq.CalcConv2Freq();
 						byPattern = conv2freq.GetPattern();
+						iSigQual = conv2freq.GetSignalQuality();
 					}
 					
 					// ------ bhu: End ------
@@ -606,35 +622,37 @@ public class ExtAudioRecorder
 	}
 	
 	// Read a existing *.wav file from sdCard
-	private byte[] readWav() throws IOException
+	private boolean readWav() throws IOException
 	{
+		int i = 0;
+		boolean bSuccess = true;
+		
 		//File file = new File(Environment.getExternalStorageDirectory()+"/WAVERECORDER/20130812163819_16000.wav");
 		File file = new File(Environment.getExternalStorageDirectory()+"/r.wav");
 		InputStream is = new FileInputStream (file);
-		
-		// find out the size of the file
-		int iBufSize = 1200000;
-				
+						
 		BufferedInputStream bis = new BufferedInputStream (is,iBufSize);
 		DataInputStream dis = new DataInputStream (bis); // Read audio data from saved file
-		
-		byte byMusic[] = new byte[iBufSize]; // Read the file into the "music" array
-		
+				
 		// Read the header data from *.wav file
 		readWavHeader(dis);
-		
-		int i = 0;
-		while((dis.available()>0)&&(i<iBufSize))
+				
+		while((dis.available()>0)&&(bSuccess!=false))
 		{
 			byMusic[i] = dis.readByte(); 
 			i++;
+			if(i>=iBufSize)
+			{
+				// The recorded file is bigger than the default buffer
+				bSuccess = false;
+			}
 		}
 		dis.close();
 		
 		// Set the size of the wav file
 		iBufSizeWav = i;
 		
-		return byMusic;
+		return bSuccess;
 	}
 
 	void readWavHeader(DataInputStream dis) throws IOException
@@ -657,4 +675,10 @@ public class ExtAudioRecorder
 	{
 		return byPattern;
 	}
+	
+	public int GetSignalQuality()
+	{
+		return iSigQual;
+	}
+	
 }

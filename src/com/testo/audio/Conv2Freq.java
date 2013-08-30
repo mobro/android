@@ -15,50 +15,62 @@ import android.os.Environment;
 
 
 public class Conv2Freq {
-	private short sChannels = 1;
-	private int iSampleRate = 44100;
-	private int iSamplPerBit = 12;
-	private int iCarrierFreq = 2400; // Carrier Frequency in Hz
-	private short sSamples = 16;
-	byte byPattern = 0;
-	int iSamples = 0; 
-	byte[] bySrcBuf = null;
-	double dThresHold = 0;
+	private static final int iPeriodPerBit = 12;  	// One bit has 12 carrier sinus periodes 
+	private static final int iCarrierFreq = 2400; 	// Carrier Frequency in Hz
+	private static final int iHalfFilterWidth = 500;  	// Half band path filter width in Hz
+	
+	private short sChannels = 1;					// Number of audio channels (mono=1, stereo=2) 
+	private int iSampleRate = 44100;				// Audio sample rate
+	private short sSamples = 16;					// Size of one sample in bit
+	private int iSigQual;
+	
+	private byte byPattern = 0;
+	private int iSamples = 0; 
+	private byte[] bySrcBuf = null;
+	private double dThresHold = 0;
 	
 	TypeConverter typeConverter = null;
 	WriteWav writeWav = null;
 	
-	private static final boolean enableDebug = false; // Set to false if no debug is needed
+	private static final boolean enableDebug = true; // Set to false if no debug is needed
 	
-	PatternFilter patFilter = null;
+	private PatternFilter patFilter = null;
 	
-	Mat mSrc = null;		// Matrix Time 16 bit signed
-	Mat mFreq = null;		// Matrix frequency 32 bit format
-	
-	int[] buff = null;
-	int[] buffMag = null;
-	
-	Size sSize;
-	
-	int iMaxValue = 0; 
-	int iMaxIndex = 0;
-	int iFilterWidth = 200;  // Value in Hz
+	private Mat mSrc = null;		// Matrix Time 16 bit signed
+	private Mat mFreq = null;		// Matrix frequency 32 bit format
 	
 	short[] sSrcBuf = null;		// Buffer stream containing sound samples (short 16 bit signed)
 	
 	Conv2Freq(int payloadSize, byte[] byBuf, int iSampRate, short sSamp, short sChan)  
+	{
+		Initialize( payloadSize, byBuf, iSampRate, sSamp, sChan);
+		
+		typeConverter = new TypeConverter();
+	}
+	
+	private void Initialize(int payloadSize, byte[] byBuf, int iSampRate, short sSamp, short sChan)
 	{
 		iSamples = payloadSize/2;
 		bySrcBuf = byBuf;
 		iSampleRate = iSampRate;
 		sSamples = sSamp;
 		sChannels = sChan;
-		
-		typeConverter = new TypeConverter();
+		iSigQual = 0;
 	}
 	
 	public void CalcConv2Freq() throws Exception
 	{
+		int i2k4Index = 0;
+		int iBandWidth = 0;
+		int iRightBoarder = 0;
+		int iLeftBoarder = 0;
+		int[] ibuffTime = null;
+		byte[] byStream = null;
+		float fSampleRate = 0.0f;
+		int[] buff = null;
+		int[] buffMag = null;
+		Size sSize;
+		
 		if(enableDebug)
 		{
 			writeWav = new WriteWav( iSampleRate, sSamples, sChannels);
@@ -77,9 +89,29 @@ public class Conv2Freq {
 		
 		if(enableDebug)
 		{
-			writeWav.writeWavShort(sSrcBuf,iSamples,Environment.getExternalStorageDirectory().getPath() + "/1.wav");
+			writeWav.writeWavShort(sSrcBuf,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/1.wav");
 		}
-				
+		
+		for(int i = 1; i < ((iSamples)); i++)
+		{
+			// Set start and end of signal to zero
+			if(i<=((iSamples)/5)||i>=(4*(iSamples)/5))
+			{
+				sSrcBuf[i] = 0;
+			}
+			else
+			{
+				sSrcBuf[i] = sSrcBuf[i];
+			}
+		}
+		
+		if(enableDebug)
+		{
+			writeWav.writeWavShort(sSrcBuf,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/1_2.wav");
+		}
+		
 		// Write the short samples into the 16bit matrix
 		mSrc.put(0, 0, sSrcBuf);
 		// Convert the 16 bit matrix into a 32 bit matrix 
@@ -88,13 +120,13 @@ public class Conv2Freq {
 		
 		// ---------- Time to frequency converting 
 		Core.dft(mSrc, mFreq, Core.DFT_SCALE, 0);
-        		
-        // Matrix type after dft is CV_32FC1 
+
+		// Matrix type after dft is CV_32FC1 
 		mFreq.convertTo(mFreq, CvType.CV_32SC1);
 
-        buff = new int[iSamples];
-        buffMag = new int[iSamples/2];
-        mFreq.get(0, 0, buff);
+		buff = new int[iSamples];
+		buffMag = new int[iSamples/2];
+		mFreq.get(0, 0, buff);
 
 		// ---------- calculate the magnitude = sqrt(Re²+Im²)
 		buff[0] = 0; // Set the dc value to zero
@@ -110,19 +142,16 @@ public class Conv2Freq {
 			buffMag[i] = (int)FloatMath.sqrt(fTemp);
 		}
 		
-		// Search for the maximum value in the frequency data stream 
-		CalcMaxValIndex( buffMag, iSamples/2);
-		
 		// Calculate index of the 2,4kHz Signal =
-		// ( Length of the signal ) / ( sf * 2400 Hz ) 
-		int i2k4Index = (iSamples * 2400) / iSampleRate;
+		// ( Length of the signal ) / ( sf * iCarrierFreq Hz ) 
+		i2k4Index = (iSamples * iCarrierFreq) / iSampleRate;
 					
 		// Put a 1kHz wide window over the frequency signal at the max amplitude 
 		// Band width is samples times filter width divided by half SampleRate 
 		// Band width = ((Samples)*500Hz)/(44100/2)
-		int iBandWidth = ((iSamples)*iFilterWidth)/(iSampleRate/2);
-		int iRightBoarder = (i2k4Index*2)+iBandWidth;
-		int iLeftBoarder = (i2k4Index*2)-iBandWidth;
+		iBandWidth = ((iSamples)*iHalfFilterWidth)/(iSampleRate/2);
+		iRightBoarder = (i2k4Index*2)+iBandWidth;
+		iLeftBoarder = (i2k4Index*2)-iBandWidth;
 		
 		for(int i = 0; i < ((iSamples)); i++)
 		{
@@ -148,24 +177,27 @@ public class Conv2Freq {
 		
 		mF2T.convertTo( mF2T, CvType.CV_32S);
 		// Get an array out of the matrix mF2T
-        int[] ibuffTime = new int[iSamples];
-        		
+		ibuffTime = new int[iSamples];
+
 		mF2T.get( 0, 0, ibuffTime);
 		
 		if(enableDebug)
 		{
-			writeWav.writeWavInt(ibuffTime,iSamples,Environment.getExternalStorageDirectory().getPath() + "/2.wav");
+			writeWav.writeWavInt(ibuffTime,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/2.wav");
 		}
 				
 		// calculate the absolute values
 		for(int i = 0; i < ((iSamples)); i++)
 		{
 			ibuffTime[i]=Math.abs(ibuffTime[i]);
+			//ibuffTime[i]=(int) Math.sqrt((double)ibuffTime[i]*(double)ibuffTime[i]);
 		}
 		
 		if(enableDebug)
 		{
-			writeWav.writeWavInt(ibuffTime,iSamples,Environment.getExternalStorageDirectory().getPath() + "/3.wav");
+			writeWav.writeWavInt(ibuffTime,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/3.wav");
 		}
 				
 		mF2T.put( 0, 0, ibuffTime); 
@@ -180,7 +212,8 @@ public class Conv2Freq {
 		if(enableDebug)
 		{
 			// Write the buffTime into a wav file
-			writeWav.writeWavInt(ibuffTime,iSamples,Environment.getExternalStorageDirectory().getPath() + "/4.wav");			
+			writeWav.writeWavInt(ibuffTime,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/4.wav");
 		}
 
 		// -------- calculate the threshold, half maximum value
@@ -188,6 +221,7 @@ public class Conv2Freq {
 		
 		dThresHold = mRes.maxVal/3;
 		
+		// Every value bigger threshold is one, every value smaller is zero.
 		for(int i=0;i<iSamples;i++)
 		{
 			if(dThresHold > ibuffTime[i])
@@ -202,20 +236,20 @@ public class Conv2Freq {
 		
 		if(enableDebug)
 		{
-			writeWav.writeWavInt(ibuffTime,iSamples,Environment.getExternalStorageDirectory().getPath() + "/5.wav");
+			writeWav.writeWavInt(ibuffTime,iSamples,
+					Environment.getExternalStorageDirectory().getPath() + "/5.wav");
 		}
-			
-		// ----------  Filter the pattern
 		
-		byte[] byStream = new byte[ibuffTime.length]; 
+		// ----------  Filter the pattern
+		byStream = new byte[ibuffTime.length]; 
 		
 		for(int iIdx= 0; iIdx<ibuffTime.length;iIdx++)
 		{
 			byStream[iIdx] = (byte) ibuffTime[iIdx];
 		}
-			
-		float fSampleRate = (float)((float)iSampleRate/(float)iCarrierFreq);
-		fSampleRate = fSampleRate * iSamplPerBit; 
+		
+		fSampleRate = (float)((float)iSampleRate/(float)iCarrierFreq);
+		fSampleRate = fSampleRate * iPeriodPerBit; 
 		
 		patFilter = new PatternFilter(byStream, iSamples, 0, fSampleRate);
 		
@@ -229,6 +263,8 @@ public class Conv2Freq {
 			//throw new Exception("Pattern Calculation went wrong!");
 			// The calculation of the pattern went wrong.
 		}
+		
+		iSigQual = patFilter.GetHighPercental();
 	}
 	
 	
@@ -237,19 +273,9 @@ public class Conv2Freq {
 		return byPattern;
 	}
 	
-	public void CalcMaxValIndex(int[] iBuffer, int iValues)
+	public int GetSignalQuality()
 	{
-		for(int i = 0; i < ((iValues/2)); i++)
-		{
-		    int iValue = iBuffer[i];
-						
-			if(iValue > iMaxValue)
-			{
-				iMaxIndex = i;
-				iMaxValue = iValue;
-			}
-		}
-		
+		return iSigQual;
 	}
 	
 }

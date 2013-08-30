@@ -24,6 +24,7 @@ import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
+import android.view.SoundEffectConstants;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ToggleButton;
@@ -34,6 +35,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.TimerTask;
 import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 //import android.media.MediaPlayer.OnCompletionListener;
 // MediaPlayer
@@ -77,13 +82,16 @@ public class MainActivity extends Activity {
 	ExtAudioRecorder extAudioRecorder;
 	AudioPlayer audioPlayer;
 	
+	
 	static String PATH_REC = (Environment.getExternalStorageDirectory().getPath() + "/record.wav");
 
 	// Initialize variables for timer
 	TimerTask timerTask = null;
 	Timer timer = null;
+	
+	AudioManager amanager;
 
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 
     	// Load opencv
         @Override
@@ -120,11 +128,19 @@ public class MainActivity extends Activity {
 
 		if (D) Log.i(TAG, "AudioRecord Buffer Size in Bytes: " + bufferSizeInBytes);
 		        
+		audioPlayer = new AudioPlayer(this); // Here the context is passing
+		
         initialize(0);
 	}
 
     private void initialize(int type){
-    	    	
+        /*amanager.setStreamMute(AudioManager.STREAM_NOTIFICATION, false);
+        amanager.setStreamMute(AudioManager.STREAM_ALARM, false);
+        amanager.setStreamMute(AudioManager.STREAM_MUSIC, false);
+        amanager.setStreamMute(AudioManager.STREAM_RING, false);
+        amanager.setStreamMute(AudioManager.STREAM_SYSTEM, false);*/
+        
+
     }
 	 
     
@@ -199,7 +215,6 @@ public class MainActivity extends Activity {
 	}
 	
 	private void startPlaying(){
-		audioPlayer = new AudioPlayer();
 		audioPlayer.playAudio();
 	}
 	
@@ -207,8 +222,8 @@ public class MainActivity extends Activity {
 		
 	    StringBuilder sb = new StringBuilder();
         sb.append(String.format("%02X ", 0));		
-		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
-		patternNmb.setText(sb);
+    	EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
+    	patternNmb.setText(sb);
 		
 		// Start recording
 		//extAudioRecorder = ExtAudioRecorder.getInstanse(true);	  // Compressed recording (AMR)
@@ -226,18 +241,31 @@ public class MainActivity extends Activity {
 	
 	private void stopRecording() throws Exception {
 		byte byPattern = 0;
+		int iSignalQuality = 0;
+		
 		
 		// Stop recording
 		extAudioRecorder.stop();
 		extAudioRecorder.release();
 		
 		byPattern = extAudioRecorder.GetPattern();
+		iSignalQuality = extAudioRecorder.GetSignalQuality();
 		
  	    StringBuilder sb = new StringBuilder();
         sb.append(String.format("%02X ", byPattern));		
 		EditText patternNmb = (EditText)findViewById(R.id.patternNumber);
 		patternNmb.setText(sb);
-				
+		
+		StringBuilder sb2 = new StringBuilder();
+        sb2.append(String.format("%02X ", iSignalQuality));		
+		EditText signalQuality = (EditText)findViewById(R.id.signalQuality);
+		signalQuality.setText(sb2);
+		
+		
+		PlayFinishSound();
+		
+		
+		
 		// terminate recording thread
 		isRecording = false;
 		if (aRecorder != null) {
@@ -251,4 +279,30 @@ public class MainActivity extends Activity {
 		}
 		
 	}
+	
+	private void PlayFinishSound() throws ClassNotFoundException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException
+	{
+		//amanager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+		/*int iMode = amanager.getMode();
+		
+		amanager.requestAudioFocus(null, amanager.AUDIOFOCUS_GAIN_TRANSIENT, amanager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+		
+		amanager.setMode(AudioManager.MODE_IN_CALL);
+		amanager.setSpeakerphoneOn(true);
+
+		amanager.loadSoundEffects();
+		amanager.playSoundEffect( SoundEffectConstants.CLICK,5);
+		amanager.unloadSoundEffects();
+		
+		amanager.abandonAudioFocus(null);
+		
+		amanager.setMode(amanager.MODE_NORMAL);
+		amanager.setSpeakerphoneOn(false);
+		*/
+		
+		
+		// Wait here till sound was played
+		//audioManager.notify();
+	}
+	
 }
